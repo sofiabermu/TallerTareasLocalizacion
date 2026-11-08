@@ -1,5 +1,6 @@
 const CLAVE_TAREAS = 'tareasGrupo2';
 const CLAVE_LUGARES = 'lugaresGrupo2';
+const CLAVE_FILTRO = 'filtroLugarGrupo2';
 const MAX_PENDIENTES = 8;
 const MIN_CARACTERES = 3;
 const MAX_CARACTERES = 60;
@@ -50,6 +51,14 @@ function guardarTareas() {
 
 function guardarLugares() {
   localStorage.setItem(CLAVE_LUGARES, JSON.stringify(lugares));
+}
+
+// rectangulo con esquinas redondeadas (algunos navegadores viejos no tienen roundRect)
+function rectRedondo(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else ctx.rect(x, y, w, h);
+  ctx.fill();
 }
 
 function generarId() {
@@ -192,7 +201,7 @@ function moverTarea(id, nuevoEstado) {
   tarea.completadaEn = nuevoEstado === 'completada' ? Date.now() : null;
   guardarTareas();
   mostrarMensaje(
-    nuevoEstado === 'completada' ? `✔ "${tarea.texto}" completada.` : `↩ "${tarea.texto}" vuelve a pendientes.`,
+    nuevoEstado === 'completada' ? `"${tarea.texto}" pasó a completadas.` : `"${tarea.texto}" volvió a pendientes.`,
     'ok'
   );
   render();
@@ -237,21 +246,21 @@ function crearTarjeta(tarea) {
   const tiempo = document.createElement('span');
   tiempo.textContent =
     tarea.estado === 'completada' && tarea.completadaEn
-      ? `✔ Completada ${tiempoTranscurrido(tarea.completadaEn)}`
-      : `🕒 Creada ${tiempoTranscurrido(tarea.creada)}`;
+      ? `Completada ${tiempoTranscurrido(tarea.completadaEn)}`
+      : `Creada ${tiempoTranscurrido(tarea.creada)}`;
   meta.appendChild(tiempo);
 
   const lugar = buscarLugar(tarea.lugarId);
   if (lugar) {
     const etiqueta = document.createElement('span');
     etiqueta.className = 'badge-lugar';
-    etiqueta.textContent = `🏷 ${lugar.nombre}`;
+    etiqueta.textContent = lugar.nombre;
     meta.appendChild(etiqueta);
 
     const distancia = distanciaALugar(lugar);
     if (distancia !== null) {
       const dist = document.createElement('span');
-      dist.textContent = `📏 ${formatearDistancia(distancia)}`;
+      dist.textContent = `a ${formatearDistancia(distancia)}`;
       meta.appendChild(dist);
     }
 
@@ -264,7 +273,7 @@ function crearTarjeta(tarea) {
     }
   } else {
     const sinLugar = document.createElement('span');
-    sinLugar.textContent = 'Cualquier lugar';
+    sinLugar.textContent = 'Sin lugar';
     meta.appendChild(sinLugar);
   }
 
@@ -279,6 +288,11 @@ function crearTarjeta(tarea) {
     e.dataTransfer.setData('text/plain', tarea.id);
     e.dataTransfer.effectAllowed = 'move';
     tarjeta.classList.add('dragging');
+  });
+
+  // alternativa al arrastre (sirve en celular, donde el drag & drop no funciona)
+  tarjeta.addEventListener('dblclick', () => {
+    moverTarea(tarea.id, tarea.estado === 'pendiente' ? 'completada' : 'pendiente');
   });
 
   tarjeta.addEventListener('dragend', () => {
@@ -315,9 +329,9 @@ function renderTablero(actual) {
       const vacio = document.createElement('p');
       vacio.className = 'vacio';
       if (delEstado.length > 0) {
-        vacio.textContent = 'No hay tareas de este lugar aquí';
+        vacio.textContent = 'Ninguna tarea de este lugar';
       } else {
-        vacio.textContent = estado === 'pendiente' ? 'No hay tareas pendientes 🎉' : 'Arrastra aquí las tareas terminadas';
+        vacio.textContent = estado === 'pendiente' ? 'Nada pendiente por ahora' : 'Suelta aquí las tareas terminadas';
       }
       lista.appendChild(vacio);
     } else {
@@ -339,11 +353,11 @@ function renderAviso(actual) {
     avisoLugar.className = 'aviso-lugar activo';
     avisoLugar.textContent =
       pendientesAqui > 0
-        ? `📍 Estás en "${actual.nombre}": tienes ${pendientesAqui} tarea(s) pendiente(s) aquí.`
-        : `📍 Estás en "${actual.nombre}": no tienes tareas pendientes en este lugar.`;
+        ? `Estás en ${actual.nombre}. Tienes ${pendientesAqui} pendiente(s) aquí.`
+        : `Estás en ${actual.nombre}. No tienes nada pendiente aquí.`;
   } else {
     avisoLugar.className = 'aviso-lugar';
-    avisoLugar.textContent = 'No estás en ninguno de tus lugares guardados.';
+    avisoLugar.textContent = 'No estás cerca de ninguno de tus lugares.';
   }
 }
 
@@ -352,13 +366,13 @@ function renderSelectLugares() {
   selectLugar.innerHTML = '';
   const sinLugar = document.createElement('option');
   sinLugar.value = '';
-  sinLugar.textContent = '🌐 Cualquier lugar';
+  sinLugar.textContent = 'Sin lugar';
   selectLugar.appendChild(sinLugar);
 
   lugares.forEach((lugar) => {
     const opcion = document.createElement('option');
     opcion.value = lugar.id;
-    opcion.textContent = `🏷 ${lugar.nombre}`;
+    opcion.textContent = lugar.nombre;
     selectLugar.appendChild(opcion);
   });
 
@@ -370,7 +384,7 @@ function renderListaLugares(actual) {
   if (lugares.length === 0) {
     const vacio = document.createElement('li');
     vacio.className = 'lugar-vacio';
-    vacio.textContent = 'Aún no tienes lugares. Agrega uno, por ejemplo "Supermercado".';
+    vacio.textContent = 'Todavía no hay lugares guardados.';
     listaLugares.appendChild(vacio);
     return;
   }
@@ -473,11 +487,14 @@ btnLimpiar.addEventListener('click', () => {
   }
 });
 
-filtroLugar.addEventListener('change', render);
+filtroLugar.addEventListener('change', () => {
+  localStorage.setItem(CLAVE_FILTRO, filtroLugar.checked ? '1' : '0');
+  render();
+});
 
 btnUsarUbicacion.addEventListener('click', () => {
   if (!posicionActual) {
-    mostrarMensaje('Aún no tenemos tu ubicación. Escribe las coordenadas a mano.', 'error', mensajeLugar, inputLat);
+    mostrarMensaje('Todavía no hay ubicación, escribe las coordenadas a mano.', 'error', mensajeLugar, inputLat);
     return;
   }
   inputLat.value = posicionActual.lat.toFixed(6);
@@ -533,7 +550,7 @@ function iniciarGeolocalizacion() {
 
 function mostrarErrorUbicacion(texto) {
   ubicacionCaja.classList.add('error');
-  ubicacionTexto.textContent = `${texto} La app sigue funcionando sin ubicación.`;
+  ubicacionTexto.textContent = `${texto} Puedes seguir usando la app igual.`;
 }
 
 function recortarTexto(texto, anchoMax) {
@@ -551,7 +568,7 @@ function dibujarCanvas(actual) {
   const H = horizontal ? 200 : 368;
   const dpr = window.devicePixelRatio || 1;
 
-  // El lienzo se dibuja a la resolución real de la pantalla para que se vea nítido.
+  // se multiplica por dpr para que no se vea borroso en pantallas retina
   canvas.style.height = `${H}px`;
   canvas.width = Math.round(W * dpr);
   canvas.height = Math.round(H * dpr);
@@ -569,7 +586,7 @@ function dibujarCanvas(actual) {
     ? tareas.filter((t) => t.estado === 'pendiente' && t.lugarId === actual.id).length
     : 0;
 
-  // Anillo de progreso
+  // circulo de progreso (% completadas)
   const cx = horizontal ? 96 : W / 2;
   const cy = horizontal ? 100 : 92;
   const radio = 72;
@@ -598,7 +615,7 @@ function dibujarCanvas(actual) {
   ctx.font = `12px ${fuente}`;
   ctx.fillText(`${total} ${total === 1 ? 'tarea' : 'tareas'} en total`, cx, cy + 18);
 
-  // Barras por estado
+  // barras pendientes / completadas
   const x0 = horizontal ? 216 : 0;
   const y0 = horizontal ? 0 : 180;
   const anchoBarras = W - x0;
@@ -622,29 +639,23 @@ function dibujarCanvas(actual) {
 
     const yBarra = b.y + 12;
     ctx.fillStyle = color(b.fondo);
-    ctx.beginPath();
-    ctx.roundRect(x0, yBarra, anchoBarras, altoBarra, altoBarra / 2);
-    ctx.fill();
+    rectRedondo(x0, yBarra, anchoBarras, altoBarra, altoBarra / 2);
 
     if (b.valor > 0) {
       ctx.fillStyle = color(b.relleno);
-      ctx.beginPath();
-      ctx.roundRect(x0, yBarra, (b.valor / maxValor) * anchoBarras, altoBarra, altoBarra / 2);
-      ctx.fill();
+      rectRedondo(x0, yBarra, (b.valor / maxValor) * anchoBarras, altoBarra, altoBarra / 2);
     }
   });
 
-  // Aviso del lugar, con el mismo aspecto que .aviso-lugar
+  // cuadro de abajo: en que lugar estoy
   const yAviso = y0 + 140;
   const altoAviso = 38;
-  ctx.fillStyle = actual ? '#f39c12' : '#ecf0f1';
-  ctx.beginPath();
-  ctx.roundRect(x0, yAviso, anchoBarras, altoAviso, 10);
-  ctx.fill();
+  ctx.fillStyle = actual ? color('--naranja') : '#ebeef0';
+  rectRedondo(x0, yAviso, anchoBarras, altoAviso, 10);
 
-  let textoAviso = '📍 Sin ubicación disponible';
-  if (actual) textoAviso = `📍 ${aqui} pendiente(s) en ${actual.nombre}`;
-  else if (posicionActual) textoAviso = '📍 Fuera de tus lugares';
+  let textoAviso = 'Sin ubicación';
+  if (actual) textoAviso = `${aqui} pendiente(s) en ${actual.nombre}`;
+  else if (posicionActual) textoAviso = 'Fuera de tus lugares';
 
   ctx.textAlign = 'left';
   ctx.fillStyle = actual ? '#fff' : color('--gris');
@@ -652,6 +663,7 @@ function dibujarCanvas(actual) {
   ctx.fillText(recortarTexto(textoAviso, anchoBarras - 28), x0 + 14, yAviso + altoAviso / 2);
 }
 
+filtroLugar.checked = localStorage.getItem(CLAVE_FILTRO) === '1';
 render();
 iniciarGeolocalizacion();
 window.addEventListener('resize', () => dibujarCanvas(lugarActual()));

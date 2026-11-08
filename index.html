@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Organizador de tareas por ubicación — Grupo 2</title>
+  <title>Tareas por ubicación - Grupo 2</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <header class="header">
     <div>
       <h1>Organizador de tareas por ubicación</h1>
+      <p class="subtitulo">Taller Grupo 2</p>
     </div>
     <div class="ubicacion" id="ubicacion">
       <div>
@@ -36,18 +37,18 @@
     <section class="panel">
       <h2>Nueva tarea</h2>
       <form id="form-tarea" class="formulario" novalidate>
-        <input type="text" id="input-tarea" placeholder="Escribe una nueva tarea..." maxlength="60" autocomplete="off">
+        <input type="text" id="input-tarea" placeholder="Ej: comprar pan" maxlength="60" autocomplete="off">
         <select id="select-lugar" title="Lugar de la tarea"></select>
         <button type="submit" id="btn-agregar">Agregar</button>
       </form>
       <p class="mensaje" id="mensaje" role="alert"></p>
-      <p class="ayuda">Máximo 8 tareas pendientes. Asigna un lugar a cada tarea: cuando estés a menos de 200 m de ese lugar, sus tareas se resaltan con <strong>Estás aquí</strong>.</p>
+      <p class="ayuda">Máx. 8 pendientes. Si le pones un lugar a la tarea y estás a menos de 200 m de él, la tarea sale marcada con <strong>Estás aquí</strong>. Arrastra las tarjetas de una columna a otra (o haz doble clic en ellas).</p>
     </section>
 
     <div class="aviso-lugar" id="aviso-lugar" hidden></div>
     <label class="filtro">
       <input type="checkbox" id="filtro-lugar">
-      Ver solo las tareas del lugar donde estoy
+      Mostrar solo las tareas del lugar donde estoy
     </label>
 
     <section class="tablero">

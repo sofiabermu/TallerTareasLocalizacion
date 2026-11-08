@@ -1,12 +1,13 @@
 :root {
-  --rojo: #e74c3c;
-  --rojo-claro: #fdecea;
-  --verde: #27ae60;
-  --verde-claro: #e8f8ef;
-  --fondo: #f4f6f9;
-  --texto: #2c3e50;
-  --gris: #7f8c8d;
-  --sombra: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --rojo: #d9443a;
+  --rojo-claro: #fbe9e7;
+  --verde: #2f9a58;
+  --verde-claro: #e6f4ea;
+  --naranja: #ee9a2b;
+  --fondo: #f2f2ef;
+  --texto: #2b3440;
+  --gris: #77808a;
+  --sombra: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 * {
@@ -38,8 +39,9 @@ body {
 }
 
 .subtitulo {
-  color: #bdc3c7;
-  font-size: 0.9rem;
+  color: #b8c0c8;
+  font-size: 0.85rem;
+  margin-top: 2px;
 }
 
 .ubicacion {
@@ -50,10 +52,6 @@ body {
   padding: 10px 16px;
   border-radius: 10px;
   font-size: 0.9rem;
-}
-
-.ubicacion-icono {
-  font-size: 1.6rem;
 }
 
 .ubicacion.error {
@@ -219,6 +217,7 @@ body {
 }
 
 .tarjeta {
+  user-select: none;
   background: #fff;
   border-radius: 8px;
   padding: 12px 14px 12px 32px;
@@ -264,7 +263,7 @@ body {
 }
 
 .tarjeta.cerca {
-  box-shadow: 0 0 0 2px #f39c12, var(--sombra);
+  box-shadow: 0 0 0 2px var(--naranja), var(--sombra);
 }
 
 .tarjeta-texto {
@@ -283,7 +282,7 @@ body {
 }
 
 .badge-cerca {
-  background: #f39c12;
+  background: var(--naranja);
   color: #fff;
   border-radius: 10px;
   padding: 1px 8px;
@@ -382,8 +381,8 @@ body {
 }
 
 .lugar-item.actual {
-  border-color: #f39c12;
-  background: #fef5e7;
+  border-color: var(--naranja);
+  background: #fdf3e4;
 }
 
 .lugar-vacio {
@@ -400,7 +399,7 @@ body {
 }
 
 .aviso-lugar.activo {
-  background: #f39c12;
+  background: var(--naranja);
   color: #fff;
   box-shadow: var(--sombra);
 }
