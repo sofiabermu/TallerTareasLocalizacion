@@ -1,10 +1,13 @@
+// nombres con los que se guardan los datos en localStorage
 const CLAVE_TAREAS = 'tareasGrupo2';
 const CLAVE_LUGARES = 'lugaresGrupo2';
 const CLAVE_FILTRO = 'filtroLugarGrupo2';
+
+// reglas propias de la app
 const MAX_PENDIENTES = 8;
 const MIN_CARACTERES = 3;
 const MAX_CARACTERES = 60;
-const RADIO_LUGAR = 200;
+const RADIO_LUGAR = 200; // metros para considerar que el usuario está en un lugar
 
 let tareas = cargar(CLAVE_TAREAS);
 let lugares = cargar(CLAVE_LUGARES);
@@ -36,6 +39,7 @@ const listas = {
   completada: document.getElementById('completadas'),
 };
 
+// lee los datos guardados si no hay o están dañados, devuelve una lista vacía
 function cargar(clave) {
   try {
     const datos = JSON.parse(localStorage.getItem(clave));
@@ -53,7 +57,7 @@ function guardarLugares() {
   localStorage.setItem(CLAVE_LUGARES, JSON.stringify(lugares));
 }
 
-// rectangulo con esquinas redondeadas (algunos navegadores viejos no tienen roundRect)
+// rectangulo con esquinas redondeadas 
 function rectRedondo(x, y, w, h, r) {
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
@@ -73,6 +77,7 @@ function normalizar(texto) {
   return texto.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+// distancia en metros entre dos coordenadas 
 function distanciaMetros(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const rad = (g) => (g * Math.PI) / 180;
@@ -113,6 +118,7 @@ function distanciaALugar(lugar) {
   return distanciaMetros(posicionActual.lat, posicionActual.lon, lugar.lat, lugar.lon);
 }
 
+// devuelve el lugar guardado más cercano dentro del radio, o null si no hay ninguno
 function lugarActual() {
   let masCercano = null;
   let menor = Infinity;
@@ -131,6 +137,7 @@ function esDelLugarActual(tarea) {
   return Boolean(actual && tarea.lugarId === actual.id);
 }
 
+// revisa las reglas de una tarea nueva
 function validarTarea(texto, lugarId) {
   const limpio = texto.trim();
   if (!limpio) return 'La tarea no puede estar vacía.';
@@ -186,6 +193,7 @@ function moverTarea(id, nuevoEstado) {
   const tarea = tareas.find((t) => t.id === id);
   if (!tarea || tarea.estado === nuevoEstado) return;
 
+  // al volver a pendientes se revisan el limite y los duplicados
   if (nuevoEstado === 'pendiente') {
     if (contarPorEstado('pendiente') >= MAX_PENDIENTES) {
       mostrarMensaje(`No puedes tener más de ${MAX_PENDIENTES} tareas pendientes.`);
@@ -221,6 +229,7 @@ function eliminarLugar(id) {
     : `¿Eliminar "${lugar.nombre}"?`;
   if (!confirm(pregunta)) return;
 
+  // las tareas del lugar no se borran solo quedan sin lugar
   lugares = lugares.filter((l) => l.id !== id);
   tareas.forEach((t) => {
     if (t.lugarId === id) t.lugarId = null;
@@ -283,6 +292,7 @@ function crearTarjeta(tarea) {
   btnEliminar.textContent = '×';
   btnEliminar.addEventListener('click', () => eliminarTarea(tarea.id));
 
+  // al empezar a arrastrar se guarda cual tarea se está moviendo
   tarjeta.addEventListener('dragstart', (e) => {
     idArrastrado = tarea.id;
     e.dataTransfer.setData('text/plain', tarea.id);
@@ -290,7 +300,7 @@ function crearTarjeta(tarea) {
     tarjeta.classList.add('dragging');
   });
 
-  // alternativa al arrastre (sirve en celular, donde el drag & drop no funciona)
+  // alternativa al arrastre para que sirva en el celular
   tarjeta.addEventListener('dblclick', () => {
     moverTarea(tarea.id, tarea.estado === 'pendiente' ? 'completada' : 'pendiente');
   });
@@ -322,6 +332,7 @@ function renderTablero(actual) {
     const visibles = delEstado.filter((t) => tareaVisible(t, actual));
 
     if (estado === 'pendiente') {
+      // las tareas del lugar donde esta el usuario salen primero
       visibles.sort((a, b) => esDelLugarActual(b) - esDelLugarActual(a));
     }
 
@@ -414,6 +425,7 @@ function renderListaLugares(actual) {
   });
 }
 
+// actualiza toda la pantalla con los datos actuales
 function render() {
   const actual = lugarActual();
   renderSelectLugares();
@@ -428,12 +440,14 @@ function render() {
   dibujarCanvas(actual);
 }
 
+// cada columna recibe las tarjetas que se sueltan sobre ella
 columnas.forEach((columna) => {
   const estado = columna.dataset.estado;
 
   columna.addEventListener('dragover', (e) => {
     e.preventDefault();
     const tarea = tareas.find((t) => t.id === idArrastrado);
+    // pendientes no acepta mas tareas si ya llego al limite
     const bloqueada =
       estado === 'pendiente' &&
       tarea &&
@@ -517,6 +531,7 @@ formLugar.addEventListener('submit', (e) => {
   formLugar.reset();
 });
 
+// sigue la ubicación del usuario y actualiza la pantalla cada vez que cambia
 function iniciarGeolocalizacion() {
   if (!('geolocation' in navigator)) {
     mostrarErrorUbicacion('Tu navegador no soporta geolocalización.');
@@ -562,13 +577,14 @@ function recortarTexto(texto, anchoMax) {
   return `${recortado}…`;
 }
 
+// dibuja en el canvas el resumen de tareas
 function dibujarCanvas(actual) {
   const W = canvas.clientWidth;
   const horizontal = W >= 520;
   const H = horizontal ? 200 : 368;
   const dpr = window.devicePixelRatio || 1;
 
-  // se multiplica por dpr para que no se vea borroso en pantallas retina
+  // para que no se vea borroso 
   canvas.style.height = `${H}px`;
   canvas.width = Math.round(W * dpr);
   canvas.height = Math.round(H * dpr);
@@ -586,7 +602,7 @@ function dibujarCanvas(actual) {
     ? tareas.filter((t) => t.estado === 'pendiente' && t.lugarId === actual.id).length
     : 0;
 
-  // circulo de progreso (% completadas)
+  // circulo de progreso 
   const cx = horizontal ? 96 : W / 2;
   const cy = horizontal ? 100 : 92;
   const radio = 72;
@@ -667,6 +683,7 @@ filtroLugar.checked = localStorage.getItem(CLAVE_FILTRO) === '1';
 render();
 iniciarGeolocalizacion();
 window.addEventListener('resize', () => dibujarCanvas(lugarActual()));
+// cada minuto actualiza los textos de tiempo, como "hace 5 min"
 setInterval(() => {
   if (!idArrastrado) render();
 }, 60000);
