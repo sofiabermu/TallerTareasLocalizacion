@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizador de tareas por ubicación — Grupo 2</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>Organizador de tareas por ubicación</h1>
+    </div>
+    <div class="ubicacion" id="ubicacion">
+      <div>
+        <strong>Mi ubicación</strong>
+        <p id="ubicacion-texto">Obteniendo ubicación...</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <section class="panel">
+      <h2>Mis lugares</h2>
+      <form id="form-lugar" class="formulario formulario-lugar" novalidate>
+        <input type="text" id="input-lugar-nombre" placeholder="Nombre (ej: Supermercado)" maxlength="30" autocomplete="off">
+        <input type="number" id="input-lat" placeholder="Latitud" step="any">
+        <input type="number" id="input-lon" placeholder="Longitud" step="any">
+        <button type="button" id="btn-usar-ubicacion" class="btn-secundario">Usar mi ubicación</button>
+        <button type="submit">Guardar lugar</button>
+      </form>
+      <p class="mensaje" id="mensaje-lugar" role="alert"></p>
+      <ul class="lista-lugares" id="lista-lugares"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Nueva tarea</h2>
+      <form id="form-tarea" class="formulario" novalidate>
+        <input type="text" id="input-tarea" placeholder="Escribe una nueva tarea..." maxlength="60" autocomplete="off">
+        <select id="select-lugar" title="Lugar de la tarea"></select>
+        <button type="submit" id="btn-agregar">Agregar</button>
+      </form>
+      <p class="mensaje" id="mensaje" role="alert"></p>
+      <p class="ayuda">Máximo 8 tareas pendientes. Asigna un lugar a cada tarea: cuando estés a menos de 200 m de ese lugar, sus tareas se resaltan con <strong>Estás aquí</strong>.</p>
+    </section>
+
+    <div class="aviso-lugar" id="aviso-lugar" hidden></div>
+    <label class="filtro">
+      <input type="checkbox" id="filtro-lugar">
+      Ver solo las tareas del lugar donde estoy
+    </label>
+
+    <section class="tablero">
+      <div class="columna pendientes" data-estado="pendiente">
+        <div class="columna-header">
+          <h2>Pendientes</h2>
+          <span class="contador" id="contador-pendiente">0</span>
+        </div>
+        <div class="lista" id="pendientes"></div>
+      </div>
+
+      <div class="columna completadas" data-estado="completada">
+        <div class="columna-header">
+          <h2>Completadas</h2>
+          <span class="contador" id="contador-completada">0</span>
+        </div>
+        <div class="lista" id="completadas"></div>
+        <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar completadas</button>
+      </div>
+    </section>
+
+    <section class="panel panel-grafico">
+      <h2>Resumen de tareas</h2>
+      <canvas id="grafico"></canvas>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
