@@ -20,55 +20,58 @@
   </header>
 
   <main class="contenedor">
-    <section class="panel">
-      <h2>Mis lugares</h2>
-      <form id="form-lugar" class="formulario formulario-lugar" novalidate>
-        <input type="text" id="input-lugar-nombre" placeholder="Nombre (ej: Supermercado)" maxlength="30" autocomplete="off">
-        <input type="number" id="input-lat" placeholder="Latitud" step="any">
-        <input type="number" id="input-lon" placeholder="Longitud" step="any">
-        <button type="button" id="btn-usar-ubicacion" class="btn-secundario">Usar mi ubicación</button>
-        <button type="submit">Guardar lugar</button>
-      </form>
-      <p class="mensaje" id="mensaje-lugar" role="alert"></p>
-      <ul class="lista-lugares" id="lista-lugares"></ul>
-    </section>
+    <!-- columna izquierda: formularios y lugar actual -->
+    <aside class="lateral">
+      <section class="panel">
+        <h2>Mis lugares</h2>
+        <form id="form-lugar" class="formulario formulario-lugar" novalidate>
+          <input type="text" id="input-lugar-nombre" placeholder="Nombre (ej: Supermercado)" maxlength="30" autocomplete="off">
+          <input type="number" id="input-lat" placeholder="Latitud" step="any">
+          <input type="number" id="input-lon" placeholder="Longitud" step="any">
+          <button type="button" id="btn-usar-ubicacion" class="btn-secundario">Usar mi ubicación</button>
+          <button type="submit">Guardar lugar</button>
+        </form>
+        <p class="mensaje" id="mensaje-lugar" role="alert"></p>
+        <ul class="lista-lugares" id="lista-lugares"></ul>
+      </section>
 
-    <section class="panel">
-      <h2>Nueva tarea</h2>
-      <form id="form-tarea" class="formulario" novalidate>
-        <input type="text" id="input-tarea" placeholder="Ej: comprar pan" maxlength="60" autocomplete="off">
-        <select id="select-lugar" title="Lugar de la tarea"></select>
-        <button type="submit" id="btn-agregar">Agregar</button>
-      </form>
-      <p class="mensaje" id="mensaje" role="alert"></p>
-      <p class="ayuda">Máx. 8 pendientes. Si le pones un lugar a la tarea y estás a menos de 200 m de él, la tarea sale marcada con <strong>Estás aquí</strong>. Arrastra las tarjetas de una columna a otra (o haz doble clic en ellas).</p>
-    </section>
+      <section class="panel">
+        <h2>Nueva tarea</h2>
+        <form id="form-tarea" class="formulario" novalidate>
+          <input type="text" id="input-tarea" placeholder="Ej: comprar pan" maxlength="60" autocomplete="off">
+          <select id="select-lugar" title="Lugar de la tarea"></select>
+          <button type="submit" id="btn-agregar">Agregar</button>
+        </form>
+        <p class="mensaje" id="mensaje" role="alert"></p>
+        <p class="ayuda">Máx. 8 pendientes. A menos de 200 m del lugar de una tarea, se marca con <strong>Estás aquí</strong>. Arrastra las tarjetas o haz doble clic para moverlas.</p>
+      </section>
 
-    <div class="aviso-lugar" id="aviso-lugar" hidden></div>
-    <label class="filtro">
-      <input type="checkbox" id="filtro-lugar">
-      Mostrar solo las tareas del lugar donde estoy
-    </label>
+      <div class="aviso-lugar" id="aviso-lugar" hidden></div>
+      <label class="filtro">
+        <input type="checkbox" id="filtro-lugar">
+        Mostrar solo las tareas del lugar donde estoy
+      </label>
+    </aside>
 
-    <section class="tablero">
-      <div class="columna pendientes" data-estado="pendiente">
-        <div class="columna-header">
-          <h2>Pendientes</h2>
-          <span class="contador" id="contador-pendiente">0</span>
-        </div>
-        <div class="lista" id="pendientes"></div>
+    <!-- centro y derecha: tablero kanban -->
+    <div class="columna pendientes" data-estado="pendiente">
+      <div class="columna-header">
+        <h2>Pendientes</h2>
+        <span class="contador" id="contador-pendiente">0</span>
       </div>
+      <div class="lista" id="pendientes"></div>
+    </div>
 
-      <div class="columna completadas" data-estado="completada">
-        <div class="columna-header">
-          <h2>Completadas</h2>
-          <span class="contador" id="contador-completada">0</span>
-        </div>
-        <div class="lista" id="completadas"></div>
-        <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar completadas</button>
+    <div class="columna completadas" data-estado="completada">
+      <div class="columna-header">
+        <h2>Completadas</h2>
+        <span class="contador" id="contador-completada">0</span>
       </div>
-    </section>
+      <div class="lista" id="completadas"></div>
+      <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar completadas</button>
+    </div>
 
+    <!-- abajo, a todo el ancho: resumen en canvas -->
     <section class="panel panel-grafico">
       <h2>Resumen de tareas</h2>
       <canvas id="grafico"></canvas>

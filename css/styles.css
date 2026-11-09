@@ -8,7 +8,7 @@
   --principal: #2F234C;
   --texto: #2d2d33;
   --gris: #77808a;
-  --sombra: 0 1px 4px rgba(0, 0, 0, 0.12);
+  --borde: #e2e2e6;
 }
 
 * {
@@ -33,7 +33,7 @@ select {
 .header {
   background: var(--principal);
   color: #fff;
-  padding: 20px 32px;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -42,7 +42,7 @@ select {
 }
 
 .header h1 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 
 .subtitulo {
@@ -65,32 +65,46 @@ select {
   background: rgba(231, 76, 60, 0.3);
 }
 
+/* distribución de izquierda a derecha: formularios | pendientes | completadas
+   y el resumen abajo ocupando todo el ancho */
 .contenedor {
-  max-width: 1000px;
-  margin: 24px auto;
+  max-width: 1280px;
+  margin: 20px auto;
   padding: 0 16px;
+  display: grid;
+  grid-template-columns: 300px 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.lateral {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .panel {
   background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--sombra);
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--borde);
+}
+
+.panel-grafico {
+  grid-column: 1 / -1;
 }
 
 .formulario {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .formulario input,
 .formulario select {
   flex: 1;
-  padding: 12px 14px;
-  border: 2px solid #dfe6e9;
+  padding: 10px 12px;
+  border: 1px solid #d6d6dc;
   border-radius: 8px;
   font-size: 1rem;
   outline: none;
@@ -107,7 +121,7 @@ select {
 
 .formulario button,
 .btn-limpiar {
-  padding: 12px 20px;
+  padding: 10px 16px;
   border: none;
   border-radius: 8px;
   background: var(--principal);
@@ -143,21 +157,14 @@ select {
   color: var(--gris);
 }
 
-.tablero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
 .columna {
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 16px;
-  min-height: 320px;
+  min-height: 460px;
+  align-self: stretch; /* misma altura que la columna izquierda */
   display: flex;
   flex-direction: column;
-  border-top: 6px solid;
-  box-shadow: var(--sombra);
-  transition: transform 0.15s, box-shadow 0.15s;
+  border-top: 4px solid;
 }
 
 .pendientes {
@@ -171,12 +178,13 @@ select {
 }
 
 .columna.drag-over {
-  transform: scale(1.01);
-  box-shadow: 0 0 0 3px rgba(75, 46, 131, 0.3);
+  outline: 2px dashed var(--principal);
+  outline-offset: -2px;
 }
 
 .columna.bloqueada {
-  box-shadow: 0 0 0 3px var(--rojo);
+  outline: 2px solid var(--rojo);
+  outline-offset: -2px;
   cursor: not-allowed;
 }
 
@@ -228,8 +236,8 @@ select {
   background: #fff;
   border-radius: 8px;
   padding: 12px 14px 12px 32px;
-  border-left: 5px solid;
-  box-shadow: var(--sombra);
+  border: 1px solid var(--borde);
+  border-left: 4px solid;
   cursor: grab;
   position: relative;
   transition: opacity 0.2s, transform 0.2s;
@@ -270,7 +278,7 @@ select {
 }
 
 .tarjeta.cerca {
-  box-shadow: 0 0 0 2px var(--naranja), var(--sombra);
+  box-shadow: 0 0 0 2px var(--naranja);
 }
 
 .tarjeta-texto {
@@ -321,17 +329,25 @@ select {
   display: block;
 }
 
+/* pantallas medianas: formularios arriba y las dos columnas debajo */
+@media (max-width: 1000px) {
+  .contenedor {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lateral {
+    grid-column: 1 / -1;
+  }
+}
+
+/* celular: todo en una sola columna */
 @media (max-width: 700px) {
-  .tablero {
+  .contenedor {
     grid-template-columns: 1fr;
   }
 
   .header {
     padding: 16px;
-  }
-
-  .formulario {
-    flex-direction: column;
   }
 }
 
@@ -341,35 +357,37 @@ select {
 }
 
 .formulario select {
-  flex: 0 0 auto;
   background: #fff;
   cursor: pointer;
 }
 
+/* nombre arriba, latitud y longitud lado a lado, botones abajo */
 .formulario-lugar {
+  flex-direction: row;
   flex-wrap: wrap;
 }
 
-.formulario-lugar input {
-  min-width: 120px;
+.formulario.formulario-lugar > * {
+  flex: 1 1 100%;
 }
 
-.formulario-lugar #input-lugar-nombre {
-  flex: 2;
-  min-width: 180px;
+.formulario-lugar #input-lat,
+.formulario-lugar #input-lon {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .formulario .btn-secundario {
   background: #fff;
   color: var(--principal);
-  border: 2px solid var(--principal);
+  border: 1px solid var(--principal);
 }
 
 .lista-lugares {
   list-style: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .lugar-item {
@@ -379,7 +397,7 @@ select {
   padding: 10px 36px 10px 14px;
   border-radius: 8px;
   background: var(--fondo);
-  border: 2px solid #dfe6e9;
+  border: 1px solid var(--borde);
   font-size: 0.85rem;
 }
 
@@ -398,9 +416,10 @@ select {
 }
 
 .aviso-lugar {
-  padding: 14px 18px;
+  padding: 12px 14px;
   border-radius: 10px;
   background: #ecf0f1;
+  font-size: 0.9rem;
   color: var(--gris);
   font-weight: 600;
 }
@@ -408,7 +427,6 @@ select {
 .aviso-lugar.activo {
   background: var(--naranja);
   color: #fff;
-  box-shadow: var(--sombra);
 }
 
 .filtro {
