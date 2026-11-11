@@ -155,6 +155,10 @@ select {
   color: var(--verde);
 }
 
+.mensaje.info {
+  color: var(--texto);
+}
+
 .ayuda {
   font-size: 0.85rem;
   color: var(--gris);
@@ -285,6 +289,17 @@ select {
 .tarjeta.dragging {
   opacity: 0.4;
   transform: rotate(2deg);
+}
+
+/* copia de la tarjeta que sigue al dedo cuando se arrastra en el celular */
+.tarjeta-fantasma {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  margin: 0;
+  opacity: 0.95;
+  transform: rotate(2deg) scale(1.03);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .tarjeta.cerca {
@@ -628,6 +643,35 @@ select {
 @media (max-width: 1000px) {
   .panel-mapa {
     grid-column: 1 / -1;
+  }
+}
+
+/* pantallas tactiles: botones mas faciles de tocar y sin menu al mantener presionado */
+@media (pointer: coarse) {
+  .tarjeta {
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    /* sin zoom por doble toque, asi el doble toque mueve la tarea */
+    touch-action: manipulation;
+  }
+
+  .btn-eliminar {
+    top: 2px;
+    right: 2px;
+    padding: 6px 8px;
+  }
+
+  .tarjeta-texto {
+    padding-right: 30px;
+  }
+
+  .btn-ver-todo {
+    padding: 8px 14px;
+  }
+
+  .filtro input {
+    width: 20px;
+    height: 20px;
   }
 }
 

@@ -105,7 +105,7 @@ function tiempoTranscurrido(fecha) {
 
 function mostrarMensaje(texto, tipo = 'error', elemento = mensaje, campo = input) {
   elemento.textContent = texto;
-  elemento.className = tipo === 'ok' ? 'mensaje ok' : 'mensaje';
+  elemento.className = tipo === 'ok' || tipo === 'info' ? `mensaje ${tipo}` : 'mensaje';
   campo.classList.toggle('invalido', tipo === 'error' && texto !== '');
 }
 
@@ -210,7 +210,7 @@ function moverTarea(id, nuevoEstado) {
   guardarTareas();
   mostrarMensaje(
     nuevoEstado === 'completada' ? `"${tarea.texto}" pasó a completadas.` : `"${tarea.texto}" volvió a pendientes.`,
-    'ok'
+    'info'
   );
   render();
 }
@@ -312,6 +312,8 @@ function crearTarjeta(tarea) {
     columnas.forEach((c) => c.classList.remove('drag-over', 'bloqueada'));
   });
 
+  activarArrastreTactil(tarjeta, tarea);
+
   const agarre = document.createElement('span');
   agarre.className = 'tarjeta-agarre';
   agarre.title = 'Arrastrar';
@@ -322,7 +324,9 @@ function crearTarjeta(tarea) {
 }
 
 function tareaVisible(tarea, actual) {
-  if (!filtroLugar.checked || !actual) return true;
+  if (!filtroLugar.checked) return true;
+  // si no esta en ninguno de sus lugares no se muestra ninguna tarea
+  if (!actual) return false;
   return tarea.lugarId === actual.id;
 }
 
@@ -340,7 +344,9 @@ function renderTablero(actual) {
     if (visibles.length === 0) {
       const vacio = document.createElement('p');
       vacio.className = 'vacio';
-      if (delEstado.length > 0) {
+      if (delEstado.length > 0 && !actual) {
+        vacio.textContent = 'No estás en ninguno de tus lugares';
+      } else if (delEstado.length > 0) {
         vacio.textContent = 'Ninguna tarea de este lugar';
       } else {
         vacio.textContent = estado === 'pendiente' ? 'Nada pendiente por ahora' : 'Suelta aquí las tareas terminadas';
@@ -439,7 +445,117 @@ function render() {
   btnLimpiar.hidden = contarPorEstado('completada') === 0;
 
   dibujarCanvas(actual);
-  renderMapa(actual);
+  renderMapa();
+}
+
+// pendientes no acepta mas tareas si ya llego al limite
+function columnaBloqueada(estado, tarea) {
+  return (
+    estado === 'pendiente' &&
+    Boolean(tarea) &&
+    tarea.estado !== 'pendiente' &&
+    contarPorEstado('pendiente') >= MAX_PENDIENTES
+  );
+}
+
+// ---------- arrastre con el dedo (celular) ----------
+// el arrastre normal (draggable) no funciona con pantallas tactiles, asi que
+// se mantiene presionada la tarjeta un momento y luego se mueve con el dedo
+const ESPERA_ARRASTRE = 250; // ms con el dedo quieto antes de empezar a arrastrar
+const TOLERANCIA_DEDO = 10; // px que se puede mover el dedo sin cancelar (si no, es scroll)
+
+function marcarColumnas(destino, tarea) {
+  columnas.forEach((c) => {
+    const esDestino = c === destino;
+    const bloqueada = esDestino && columnaBloqueada(c.dataset.estado, tarea);
+    c.classList.toggle('bloqueada', bloqueada);
+    c.classList.toggle('drag-over', esDestino && !bloqueada);
+  });
+}
+
+function activarArrastreTactil(tarjeta, tarea) {
+  let temporizador = null;
+  let fantasma = null; // copia de la tarjeta que sigue al dedo
+  let destino = null;
+  let inicioX = 0;
+  let inicioY = 0;
+  let desfaseX = 0;
+  let desfaseY = 0;
+
+  const moverFantasma = (x, y) => {
+    fantasma.style.left = `${x - desfaseX}px`;
+    fantasma.style.top = `${y - desfaseY}px`;
+  };
+
+  const empezar = () => {
+    temporizador = null;
+    const rect = tarjeta.getBoundingClientRect();
+    desfaseX = inicioX - rect.left;
+    desfaseY = inicioY - rect.top;
+    fantasma = tarjeta.cloneNode(true);
+    fantasma.classList.add('tarjeta-fantasma');
+    fantasma.style.width = `${rect.width}px`;
+    moverFantasma(inicioX, inicioY);
+    document.body.appendChild(fantasma);
+    tarjeta.classList.add('dragging');
+    if (navigator.vibrate) navigator.vibrate(15);
+  };
+
+  const terminar = () => {
+    clearTimeout(temporizador);
+    temporizador = null;
+    if (fantasma) fantasma.remove();
+    fantasma = null;
+    destino = null;
+    tarjeta.classList.remove('dragging');
+    marcarColumnas(null, tarea);
+  };
+
+  tarjeta.addEventListener(
+    'touchstart',
+    (e) => {
+      if (e.touches.length !== 1 || e.target.closest('.btn-eliminar')) return;
+      inicioX = e.touches[0].clientX;
+      inicioY = e.touches[0].clientY;
+      temporizador = setTimeout(empezar, ESPERA_ARRASTRE);
+    },
+    { passive: true }
+  );
+
+  tarjeta.addEventListener(
+    'touchmove',
+    (e) => {
+      const toque = e.touches[0];
+      if (!fantasma) {
+        // si mueve el dedo antes de tiempo quiere hacer scroll, no arrastrar
+        if (Math.hypot(toque.clientX - inicioX, toque.clientY - inicioY) > TOLERANCIA_DEDO) terminar();
+        return;
+      }
+      e.preventDefault(); // mientras arrastra la pagina no se desplaza
+      moverFantasma(toque.clientX, toque.clientY);
+      const debajo = document.elementFromPoint(toque.clientX, toque.clientY);
+      destino = debajo ? debajo.closest('.columna') : null;
+      marcarColumnas(destino, tarea);
+    },
+    { passive: false }
+  );
+
+  tarjeta.addEventListener('touchend', (e) => {
+    if (!fantasma) {
+      terminar();
+      return;
+    }
+    e.preventDefault(); // evita que el toque cuente como clic
+    const columnaFinal = destino;
+    terminar();
+    if (columnaFinal) moverTarea(tarea.id, columnaFinal.dataset.estado);
+  });
+
+  tarjeta.addEventListener('touchcancel', terminar);
+  // que no salga el menu del navegador al mantener presionado
+  tarjeta.addEventListener('contextmenu', (e) => {
+    if (temporizador || fantasma) e.preventDefault();
+  });
 }
 
 // cada columna recibe las tarjetas que se sueltan sobre ella
@@ -449,12 +565,7 @@ columnas.forEach((columna) => {
   columna.addEventListener('dragover', (e) => {
     e.preventDefault();
     const tarea = tareas.find((t) => t.id === idArrastrado);
-    // pendientes no acepta mas tareas si ya llego al limite
-    const bloqueada =
-      estado === 'pendiente' &&
-      tarea &&
-      tarea.estado !== 'pendiente' &&
-      contarPorEstado('pendiente') >= MAX_PENDIENTES;
+    const bloqueada = columnaBloqueada(estado, tarea);
     e.dataTransfer.dropEffect = bloqueada ? 'none' : 'move';
     columna.classList.toggle('bloqueada', bloqueada);
     columna.classList.toggle('drag-over', !bloqueada);
@@ -752,7 +863,7 @@ function crearMapa() {
     inputLat.value = e.latlng.lat.toFixed(6);
     inputLon.value = e.latlng.lng.toFixed(6);
     inputLugarNombre.focus({ preventScroll: true });
-    mostrarMensaje('Coordenadas tomadas del mapa. Ponle nombre y guarda el lugar.', 'ok', mensajeLugar, inputLugarNombre);
+    mostrarMensaje('Coordenadas tomadas del mapa. Ponle nombre y guarda el lugar.', 'info', mensajeLugar, inputLugarNombre);
   });
 
   document.getElementById('btn-centrar-mapa').addEventListener('click', verTodo);
@@ -814,7 +925,7 @@ function crearPopupLugar(lugar, delLugar) {
   return caja;
 }
 
-function dibujarLugares(actual) {
+function dibujarLugares() {
   redibujando = true;
   capaLugares.clearLayers();
   redibujando = false;
@@ -823,10 +934,9 @@ function dibujarLugares(actual) {
     const delLugar = tareas.filter((t) => t.lugarId === lugar.id);
     const pendientes = delLugar.filter((t) => t.estado === 'pendiente').length;
 
-    // naranja si estoy ahí, rojo si tiene pendientes, verde si no
+    // rojo si tiene pendientes, verde si no
     let color = colorVariable('--verde');
-    if (actual && actual.id === lugar.id) color = colorVariable('--naranja');
-    else if (pendientes > 0) color = colorVariable('--rojo');
+    if (pendientes > 0) color = colorVariable('--rojo');
 
     // el círculo es el radio en el que la app considera que estás en el lugar
     L.circle([lugar.lat, lugar.lon], {
@@ -890,9 +1000,9 @@ function dibujarUsuario() {
 }
 
 // se llama desde render()
-function renderMapa(actual) {
+function renderMapa() {
   if (!mapa) return;
-  dibujarLugares(actual);
+  dibujarLugares();
   dibujarUsuario();
 }
 
