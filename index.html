@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tareas por ubicación - Grupo 2</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
   <header class="header">
     <div>
@@ -14,18 +17,30 @@
     <div class="ubicacion" id="ubicacion">
       <div>
         <strong>Mi ubicación</strong>
-        <p id="ubicacion-texto">Obteniendo ubicación...</p>
+        <p id="ubicacion-texto">Esperando permiso...</p>
+        <button type="button" id="btn-activar-ubicacion" class="btn-activar" hidden>Activar ubicación</button>
       </div>
     </div>
   </header>
+
+  <dialog id="dialogo-ubicacion" class="dialogo">
+    <h2>¿Permites mostrar tu ubicación?</h2>
+    <p>La usamos para mostrar dónde estás y avisarte qué tareas tienes cerca. No se envía a ningún lado, todo queda en
+      tu navegador.</p>
+    <div class="dialogo-botones">
+      <button type="button" id="btn-ubicacion-no" class="btn-no">Ahora no</button>
+      <button type="button" id="btn-ubicacion-si" class="btn-si">Sí, permitir</button>
+    </div>
+  </dialog>
 
   <main class="contenedor">
     <!-- columna izquierda: formularios y lugar actual -->
     <aside class="lateral">
       <section class="panel">
-        <h2>Mis lugares</h2>
+        <h2>Agregar lugares</h2>
         <form id="form-lugar" class="formulario formulario-lugar" novalidate>
-          <input type="text" id="input-lugar-nombre" placeholder="Nombre (ej: Supermercado)" maxlength="30" autocomplete="off">
+          <input type="text" id="input-lugar-nombre" placeholder="Nombre (ej: Supermercado)" maxlength="30"
+            autocomplete="off">
           <input type="number" id="input-lat" placeholder="Latitud" step="any">
           <input type="number" id="input-lon" placeholder="Longitud" step="any">
           <button type="button" id="btn-usar-ubicacion" class="btn-secundario">Usar mi ubicación</button>
@@ -36,14 +51,14 @@
       </section>
 
       <section class="panel">
-        <h2>Nueva tarea</h2>
+        <h2>Agregar tareas</h2>
         <form id="form-tarea" class="formulario" novalidate>
           <input type="text" id="input-tarea" placeholder="Ej: comprar pan" maxlength="60" autocomplete="off">
           <select id="select-lugar" title="Lugar de la tarea"></select>
           <button type="submit" id="btn-agregar">Agregar</button>
         </form>
         <p class="mensaje" id="mensaje" role="alert"></p>
-        <p class="ayuda">Máx. 8 pendientes. A menos de 200 m del lugar de una tarea, se marca con <strong>Estás aquí</strong>. Arrastra las tarjetas o haz doble clic para moverlas.</p>
+        <p class="ayuda">Maximo 8 tareas pendientes</p>
       </section>
 
       <div class="aviso-lugar" id="aviso-lugar" hidden></div>
@@ -71,6 +86,22 @@
       <button type="button" class="btn-limpiar" id="btn-limpiar">Limpiar completadas</button>
     </div>
 
+    <!-- mapa con los lugares guardados, sus tareas y mi ubicación -->
+    <section class="panel panel-mapa">
+      <div class="panel-mapa-header">
+        <h2>Mapa</h2>
+        <button type="button" id="btn-centrar-mapa" class="btn-ver-todo">Ver todo</button>
+      </div>
+      <div id="mapa"></div>
+      <div class="leyenda-mapa">
+        <span style="--color: var(--azul)">Tú</span>
+        <span style="--color: var(--rojo)">Lugar con pendientes</span>
+        <span style="--color: var(--verde)">Lugar sin pendientes</span>
+        <span style="--color: var(--naranja)">Lugar donde estás</span>
+        <em>Toca un lugar para ver sus tareas. Toca el mapa para copiar las coordenadas al formulario.</em>
+      </div>
+    </section>
+
     <!-- abajo, a todo el ancho: resumen en canvas -->
     <section class="panel panel-grafico">
       <h2>Resumen de tareas</h2>
@@ -78,6 +109,8 @@
     </section>
   </main>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/app.js"></script>
 </body>
+
 </html>

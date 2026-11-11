@@ -219,6 +219,7 @@ function agregarLugar(nombre, lat, lon) {
   lugares.push({ id: generarId(), nombre: nombre.trim(), lat, lon });
   guardarLugares();
   render();
+  if (mapa) mapa.panTo([lat, lon]);
 }
 
 function eliminarLugar(id) {
@@ -438,6 +439,7 @@ function render() {
   btnLimpiar.hidden = contarPorEstado('completada') === 0;
 
   dibujarCanvas(actual);
+  renderMapa(actual);
 }
 
 // cada columna recibe las tarjetas que se sueltan sobre ella
@@ -568,6 +570,45 @@ function mostrarErrorUbicacion(texto) {
   ubicacionTexto.textContent = `${texto} Puedes seguir usando la app igual.`;
 }
 
+// al abrir la app primero le preguntamos al usuario si quiere compartir su ubicación
+const dialogoUbicacion = document.getElementById('dialogo-ubicacion');
+const btnActivarUbicacion = document.getElementById('btn-activar-ubicacion');
+let ubicacionIniciada = false;
+
+function preguntarUbicacion() {
+  if (typeof dialogoUbicacion.showModal === 'function') {
+    dialogoUbicacion.showModal();
+  } else if (confirm('¿Permites mostrar tu ubicación?')) {
+    aceptarUbicacion();
+  } else {
+    rechazarUbicacion();
+  }
+}
+
+function aceptarUbicacion() {
+  if (dialogoUbicacion.open) dialogoUbicacion.close();
+  btnActivarUbicacion.hidden = true;
+  if (ubicacionIniciada) return;
+  ubicacionIniciada = true;
+  ubicacionTexto.textContent = 'Obteniendo ubicación...';
+  iniciarGeolocalizacion();
+}
+
+function rechazarUbicacion() {
+  if (dialogoUbicacion.open) dialogoUbicacion.close();
+  ubicacionTexto.textContent = 'No compartiste tu ubicación.';
+  btnActivarUbicacion.hidden = false;
+}
+
+document.getElementById('btn-ubicacion-si').addEventListener('click', aceptarUbicacion);
+document.getElementById('btn-ubicacion-no').addEventListener('click', rechazarUbicacion);
+btnActivarUbicacion.addEventListener('click', preguntarUbicacion);
+// si cierra la ventana con Esc cuenta como "Ahora no"
+dialogoUbicacion.addEventListener('cancel', (e) => {
+  e.preventDefault();
+  rechazarUbicacion();
+});
+
 function recortarTexto(texto, anchoMax) {
   if (ctx.measureText(texto).width <= anchoMax) return texto;
   let recortado = texto;
@@ -679,9 +720,186 @@ function dibujarCanvas(actual) {
   ctx.fillText(recortarTexto(textoAviso, anchoBarras - 28), x0 + 14, yAviso + altoAviso / 2);
 }
 
+// ---------- mapa (Leaflet): lugares guardados, sus tareas y mi ubicación ----------
+
+const CENTRO_INICIAL = [5.0689, -75.5174]; // Manizales, por si no hay ubicación ni lugares
+
+let mapa = null;
+let capaLugares = null;
+let marcadorUsuario = null;
+let circuloPrecision = null;
+let usuarioCentrado = false;
+let lugarAbierto = null; // id del lugar con el popup abierto, para no cerrarlo al redibujar
+let redibujando = false;
+
+function crearMapa() {
+  const contenedor = document.getElementById('mapa');
+  if (typeof L === 'undefined') {
+    contenedor.textContent = 'No se pudo cargar el mapa. Revisa tu conexión a internet.';
+    contenedor.classList.add('mapa-error');
+    return;
+  }
+
+  mapa = L.map(contenedor).setView(CENTRO_INICIAL, 14);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(mapa);
+  capaLugares = L.layerGroup().addTo(mapa);
+
+  // clic en el mapa: copia las coordenadas al formulario de lugares
+  mapa.on('click', (e) => {
+    inputLat.value = e.latlng.lat.toFixed(6);
+    inputLon.value = e.latlng.lng.toFixed(6);
+    inputLugarNombre.focus({ preventScroll: true });
+    mostrarMensaje('Coordenadas tomadas del mapa. Ponle nombre y guarda el lugar.', 'ok', mensajeLugar, inputLugarNombre);
+  });
+
+  document.getElementById('btn-centrar-mapa').addEventListener('click', verTodo);
+  window.addEventListener('resize', () => mapa.invalidateSize());
+
+  if (lugares.length > 0) verTodo();
+}
+
+// ajusta el zoom para que se vean todos los lugares y el usuario
+function verTodo() {
+  if (!mapa) return;
+  const puntos = lugares.map((l) => [l.lat, l.lon]);
+  if (posicionActual) puntos.push([posicionActual.lat, posicionActual.lon]);
+
+  if (puntos.length === 0) mapa.setView(CENTRO_INICIAL, 14);
+  else if (puntos.length === 1) mapa.setView(puntos[0], 16);
+  else mapa.fitBounds(puntos, { padding: [40, 40], maxZoom: 17 });
+}
+
+function colorVariable(nombre) {
+  return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
+}
+
+// contenido del popup de un lugar: nombre, distancia y sus tareas
+function crearPopupLugar(lugar, delLugar) {
+  const caja = document.createElement('div');
+  caja.className = 'popup-lugar';
+
+  const titulo = document.createElement('strong');
+  titulo.textContent = lugar.nombre;
+  caja.appendChild(titulo);
+
+  const distancia = distanciaALugar(lugar);
+  if (distancia !== null) {
+    const info = document.createElement('span');
+    info.className = 'popup-distancia';
+    info.textContent = distancia <= RADIO_LUGAR ? 'Estás aquí' : `A ${formatearDistancia(distancia)} de ti`;
+    caja.appendChild(info);
+  }
+
+  if (delLugar.length === 0) {
+    const vacio = document.createElement('p');
+    vacio.textContent = 'Sin tareas en este lugar.';
+    caja.appendChild(vacio);
+    return caja;
+  }
+
+  const lista = document.createElement('ul');
+  // primero las pendientes y luego las completadas
+  [...delLugar]
+    .sort((a, b) => (a.estado === 'pendiente' ? -1 : 1) - (b.estado === 'pendiente' ? -1 : 1))
+    .forEach((t) => {
+      const item = document.createElement('li');
+      item.className = t.estado;
+      item.textContent = t.texto;
+      lista.appendChild(item);
+    });
+  caja.appendChild(lista);
+  return caja;
+}
+
+function dibujarLugares(actual) {
+  redibujando = true;
+  capaLugares.clearLayers();
+  redibujando = false;
+
+  lugares.forEach((lugar) => {
+    const delLugar = tareas.filter((t) => t.lugarId === lugar.id);
+    const pendientes = delLugar.filter((t) => t.estado === 'pendiente').length;
+
+    // naranja si estoy ahí, rojo si tiene pendientes, verde si no
+    let color = colorVariable('--verde');
+    if (actual && actual.id === lugar.id) color = colorVariable('--naranja');
+    else if (pendientes > 0) color = colorVariable('--rojo');
+
+    // el círculo es el radio en el que la app considera que estás en el lugar
+    L.circle([lugar.lat, lugar.lon], {
+      radius: RADIO_LUGAR,
+      color,
+      weight: 1,
+      fillOpacity: 0.12,
+      interactive: false,
+    }).addTo(capaLugares);
+
+    const punto = L.circleMarker([lugar.lat, lugar.lon], {
+      radius: 9,
+      color: '#fff',
+      weight: 2,
+      fillColor: color,
+      fillOpacity: 1,
+    })
+      .bindTooltip(`${lugar.nombre} (${pendientes})`, { permanent: true, direction: 'top', offset: [0, -8] })
+      .bindPopup(crearPopupLugar(lugar, delLugar))
+      .addTo(capaLugares);
+
+    punto.on('popupopen', () => { lugarAbierto = lugar.id; });
+    punto.on('popupclose', () => {
+      if (!redibujando && lugarAbierto === lugar.id) lugarAbierto = null;
+    });
+    if (lugarAbierto === lugar.id) punto.openPopup();
+  });
+}
+
+function dibujarUsuario() {
+  if (!posicionActual) return;
+  const punto = [posicionActual.lat, posicionActual.lon];
+
+  if (!marcadorUsuario) {
+    circuloPrecision = L.circle(punto, {
+      radius: posicionActual.precision,
+      color: colorVariable('--azul'),
+      weight: 1,
+      fillOpacity: 0.1,
+      interactive: false,
+    }).addTo(mapa);
+    marcadorUsuario = L.circleMarker(punto, {
+      radius: 8,
+      color: '#fff',
+      weight: 3,
+      fillColor: colorVariable('--azul'),
+      fillOpacity: 1,
+    })
+      .bindPopup('Estás aquí')
+      .addTo(mapa);
+  } else {
+    marcadorUsuario.setLatLng(punto);
+    circuloPrecision.setLatLng(punto).setRadius(posicionActual.precision);
+  }
+
+  // la primera vez que llega la ubicación se centra el mapa
+  if (!usuarioCentrado) {
+    usuarioCentrado = true;
+    verTodo();
+  }
+}
+
+// se llama desde render()
+function renderMapa(actual) {
+  if (!mapa) return;
+  dibujarLugares(actual);
+  dibujarUsuario();
+}
+
 filtroLugar.checked = localStorage.getItem(CLAVE_FILTRO) === '1';
+crearMapa();
 render();
-iniciarGeolocalizacion();
+preguntarUbicacion();
 window.addEventListener('resize', () => dibujarCanvas(lugarActual()));
 // cada minuto actualiza los textos de tiempo, como "hace 5 min"
 setInterval(() => {

@@ -3,9 +3,10 @@
   --rojo-claro: #fbe9e7;
   --verde: #2f9a58;
   --verde-claro: #e6f4ea;
-  --naranja: #ee9a2b;
+  --naranja: #14587D;
+  --azul: #2b7bd9;
   --fondo: #f2f2ef;
-  --principal: #2F234C;
+  --principal: #7D2514;
   --texto: #2d2d33;
   --gris: #77808a;
   --borde: #e2e2e6;
@@ -78,6 +79,8 @@ select {
 }
 
 .lateral {
+  grid-row: span 2;
+  /* ocupa la fila del tablero y la del mapa */
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -160,21 +163,19 @@ select {
 .columna {
   border-radius: 10px;
   padding: 16px;
-  min-height: 460px;
-  align-self: stretch; /* misma altura que la columna izquierda */
+  min-height: 240px;
+  align-self: stretch;
+  /* pendientes y completadas con la misma altura */
   display: flex;
   flex-direction: column;
-  border-top: 4px solid;
 }
 
 .pendientes {
   background: var(--rojo-claro);
-  border-color: var(--rojo);
 }
 
 .completadas {
   background: var(--verde-claro);
-  border-color: var(--verde);
 }
 
 .columna.drag-over {
@@ -195,8 +196,13 @@ select {
   margin-bottom: 12px;
 }
 
-.pendientes h2 { color: var(--rojo); }
-.completadas h2 { color: var(--verde); }
+.pendientes h2 {
+  color: var(--rojo);
+}
+
+.completadas h2 {
+  color: var(--verde);
+}
 
 .contador {
   color: #fff;
@@ -205,17 +211,25 @@ select {
   padding: 2px 12px;
 }
 
-.pendientes .contador { background: var(--rojo); }
-.completadas .contador { background: var(--verde); }
+.pendientes .contador {
+  background: var(--rojo);
+}
 
+.completadas .contador {
+  background: var(--verde);
+}
+
+/* las tarjetas van en dos columnas para ocupar menos alto */
 .lista {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
   gap: 10px;
 }
 
 .vacio {
+  grid-column: 1 / -1;
   text-align: center;
   color: var(--gris);
   font-size: 0.9rem;
@@ -237,7 +251,6 @@ select {
   border-radius: 8px;
   padding: 12px 14px 12px 32px;
   border: 1px solid var(--borde);
-  border-left: 4px solid;
   cursor: grab;
   position: relative;
   transition: opacity 0.2s, transform 0.2s;
@@ -263,9 +276,6 @@ select {
 .tarjeta:active {
   cursor: grabbing;
 }
-
-.pendientes .tarjeta { border-left-color: var(--rojo); }
-.completadas .tarjeta { border-left-color: var(--verde); }
 
 .completadas .tarjeta-texto {
   text-decoration: line-through;
@@ -337,6 +347,7 @@ select {
 
   .lateral {
     grid-column: 1 / -1;
+    grid-row: auto;
   }
 }
 
@@ -367,7 +378,7 @@ select {
   flex-wrap: wrap;
 }
 
-.formulario.formulario-lugar > * {
+.formulario.formulario-lugar>* {
   flex: 1 1 100%;
 }
 
@@ -442,4 +453,187 @@ select {
   color: var(--texto);
   border-radius: 10px;
   padding: 1px 8px;
+}
+
+.dialogo {
+  margin: auto;
+  max-width: 380px;
+  width: calc(100% - 32px);
+  border: none;
+  border-radius: 12px;
+  padding: 22px;
+  color: var(--texto);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+.dialogo::backdrop {
+  background: rgba(30, 36, 44, 0.55);
+}
+
+.dialogo h2 {
+  font-size: 1.15rem;
+  margin-bottom: 8px;
+}
+
+.dialogo p {
+  font-size: 0.92rem;
+  color: var(--gris);
+  margin-bottom: 18px;
+}
+
+.dialogo-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dialogo-botones button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btn-si {
+  border: none;
+  background: var(--texto);
+  color: #fff;
+}
+
+.btn-no {
+  border: 2px solid #dfe6e9;
+  background: #fff;
+  color: var(--texto);
+}
+
+.btn-activar {
+  margin-top: 6px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn-activar[hidden] {
+  display: none;
+}
+
+/* mapa de lugares (Leaflet) */
+.panel-mapa {
+  grid-column: 2 / -1;
+  /* justo debajo de pendientes y completadas */
+}
+
+.panel-mapa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.panel-mapa-header h2 {
+  margin-bottom: 0;
+}
+
+.btn-ver-todo {
+  padding: 6px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--texto);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-ver-todo:hover {
+  border-color: var(--principal);
+}
+
+#mapa {
+  height: 400px;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  margin-bottom: 10px;
+}
+
+#mapa.mapa-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gris);
+  background: var(--fondo);
+}
+
+.leyenda-mapa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 0.82rem;
+  color: var(--gris);
+}
+
+.leyenda-mapa span::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: -1px;
+  background: var(--color);
+}
+
+.popup-lugar strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.popup-distancia {
+  display: block;
+  color: var(--gris);
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.popup-lugar p {
+  margin: 4px 0 0;
+  color: var(--gris);
+}
+
+.popup-lugar ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+
+.popup-lugar li.pendiente {
+  color: var(--rojo);
+}
+
+.popup-lugar li.completada {
+  color: var(--verde);
+  text-decoration: line-through;
+}
+
+@media (max-width: 700px) {
+  #mapa {
+    height: 300px;
+  }
+}
+
+/* pantallas medianas y celular: el mapa a todo el ancho
+   (va aquí al final para que gane sobre la regla .panel-mapa de arriba) */
+@media (max-width: 1000px) {
+  .panel-mapa {
+    grid-column: 1 / -1;
+  }
+}
+
+/* celular angosto: las tarjetas vuelven a una sola columna */
+@media (max-width: 480px) {
+  .lista {
+    grid-template-columns: 1fr;
+  }
 }
